@@ -296,6 +296,12 @@
       .invoice-head { flex-direction: column; align-items: center; text-align: center; }
       .invoice-head div:last-child { text-align: center; }
     }
+    /* Purchase items list styles */
+    .purchase-item { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px solid var(--border-light); }
+    .purchase-item select, .purchase-item input { padding: 6px 10px; font-size: 13px; flex: 1; min-width: 80px; }
+    .purchase-item .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .purchase-item .item-total { font-weight: 600; min-width: 70px; text-align: right; }
+    #purchaseItemsList { max-height: 300px; overflow-y: auto; }
   </style>
 </head>
 <body>
@@ -420,7 +426,7 @@
       <div id="salesTabReturns" style="display:none"><div class="panel"><div class="toolbar"><button class="btn btn-primary" onclick="openReturnModal()"><i class="fas fa-plus"></i> New Return</button><input class="search" id="salReturnSearch" placeholder="Search..." oninput="renderSalesReturns()"></div><div id="salesReturnsTable"></div></div></div>
     </section>
 
-    <!-- PURCHASES -->
+    <!-- PURCHASES (UPDATED) -->
     <section id="purchases" class="page">
       <div class="toolbar no-print">
         <button class="btn btn-light active" onclick="showPurTab('list')" id="tabPurListBtn"><i class="fas fa-list"></i> Purchases</button>
@@ -574,7 +580,7 @@ db.products.forEach(p=>{
 });
 db.suppliers.forEach(s=>{ if(s.due===undefined) s.due=0; });
 
-let cart=[]; let editingPurchaseId=null;
+let cart=[]; let editingPurchaseId=null; let purchaseItems=[]; // For multi-item purchase
 let currentUser=JSON.parse(sessionStorage.getItem('pharmacyCurrentUser')||'null');
 
 const money=n=>(db.settings.currency||'Rs')+' '+Number(n||0).toLocaleString('en-PK',{maximumFractionDigits:2});
@@ -811,7 +817,7 @@ function renderSalesReturns(){
   document.getElementById('salesReturnsTable').innerHTML=a.length?`<table><thead><tr><th>Return #</th><th>Invoice</th><th>Date</th><th>Items</th><th class="num">Refund</th></tr></thead><tbody>${a.slice().reverse().map(x=>`<tr><td>${x.returnNo}</td><td>${x.saleInvoice}</td><td>${new Date(x.date).toLocaleString()}</td><td>${x.items.map(i=>esc(i.name)+' x'+i.qty).join(', ')}</td><td class="num">${money(x.refund)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No returns</div>';
 }
 
-/* ===== PURCHASES ===== */
+/* ===== PURCHASES (UPDATED - Multi-item with total) ===== */
 function showPurTab(tab){
   document.getElementById('purTabList').style.display=tab==='list'?'block':'none';
   document.getElementById('purTabReturns').style.display=tab==='returns'?'block':'none';
@@ -824,28 +830,134 @@ function openPurchaseModal(editId=null){
   editingPurchaseId=editId;
   let entry=editId?db.purchases.find(p=>p.id===editId):null;
   let opts=db.suppliers.map(s=>`<option value="${s.id}" ${entry && entry.supplierId==s.id?'selected':''}>${esc(s.name)}</option>`).join('');
-  let productOpts=db.products.map(p=>`<option value="${p.id}" ${entry && entry.productId==p.id?'selected':''}>${esc(p.name)} (stock: ${p.stock})</option>`).join('');
+  let productOpts=db.products.map(p=>`<option value="${p.id}">${esc(p.name)} (stock: ${p.stock})</option>`).join('');
+  
+  // If editing, populate purchaseItems
+  if(entry && entry.items) {
+    purchaseItems = JSON.parse(JSON.stringify(entry.items));
+  } else {
+    purchaseItems = [];
+  }
+  
+  let itemsHTML = purchaseItems.map((item, idx) => `
+    <div class="purchase-item">
+      <select class="pur-item-product" data-idx="${idx}" style="flex:2;min-width:120px;">
+        ${db.products.map(p=>`<option value="${p.id}" ${item.productId==p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
+      </select>
+      <input class="pur-item-qty" data-idx="${idx}" type="number" placeholder="Qty" value="${item.qty||1}" min="1" style="flex:1;min-width:60px;">
+      <input class="pur-item-price" data-idx="${idx}" type="number" placeholder="Price" value="${item.price||''}" min="0" step="0.01" style="flex:1;min-width:80px;">
+      <span class="item-total">${money((item.qty||0)*(item.price||0))}</span>
+      <button class="btn btn-danger btn-sm" onclick="removePurchaseItem(${idx})"><i class="fas fa-times"></i></button>
+    </div>
+  `).join('');
+  
+  let totalPurchase = purchaseItems.reduce((sum, item) => sum + (item.qty||0)*(item.price||0), 0);
+  
   let title=editId?'Edit Purchase':'Add Purchase';
   let btnText=editId?'Update Purchase':'Save Purchase';
-  openModal(title,`<div class="formgrid"><input id="purInvoice" placeholder="Invoice #" value="${entry?esc(entry.invoice):'PUR-'+uid()}"><select id="purSupplier"><option value="">Select Supplier</option>${opts}</select><select id="purProduct"><option value="">Select Medicine</option>${productOpts}</select><input id="purQty" type="number" placeholder="Quantity" value="${entry?entry.qty:1}"><input id="purPrice" type="number" placeholder="Purchase price/unit" value="${entry?entry.price:''}"><input id="purDate" type="date" value="${entry?entry.date:todayStr()}"><input id="purPaid" type="number" placeholder="Amount paid now" value="${entry?entry.paidNow:0}"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="${editId?'updatePurchase('+editId+')':'addPurchase()'}"><i class="fas fa-save"></i> ${btnText}</button></div>`);
+  
+  openModal(title,`
+    <div class="formgrid">
+      <input id="purInvoice" placeholder="Invoice #" value="${entry?esc(entry.invoice):'PUR-'+uid()}">
+      <select id="purSupplier"><option value="">Select Supplier</option>${opts}</select>
+      <input id="purDate" type="date" value="${entry?entry.date:todayStr()}">
+    </div>
+    <div style="margin:12px 0;">
+      <h3 style="font-size:15px;margin-bottom:8px;">Purchase Items</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <select id="purAddProduct" style="flex:2;min-width:120px;"><option value="">Add Medicine...</option>${productOpts}</select>
+        <input id="purAddQty" type="number" placeholder="Qty" value="1" min="1" style="flex:1;min-width:60px;">
+        <input id="purAddPrice" type="number" placeholder="Price" min="0" step="0.01" style="flex:1;min-width:80px;">
+        <button class="btn btn-success btn-sm" onclick="addPurchaseItem()"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      <div id="purchaseItemsList">
+        ${itemsHTML || '<div class="empty">No items added yet</div>'}
+      </div>
+      <div style="text-align:right;font-size:18px;font-weight:700;padding:8px 0;border-top:2px solid var(--border-light);">
+        Total: <span id="purchaseTotalDisplay">${money(totalPurchase)}</span>
+      </div>
+      <input id="purPaid" type="number" placeholder="Amount paid now" value="${entry?entry.paidNow:0}" min="0" style="width:100%;margin-top:6px;">
+    </div>
+    <div style="margin-top:8px;text-align:right">
+      <button class="btn btn-primary" onclick="${editId?'updatePurchaseMulti('+editId+')':'addPurchaseMulti()'}"><i class="fas fa-save"></i> ${btnText}</button>
+    </div>
+  `);
 }
-function addPurchase(){
-  let productId=document.getElementById('purProduct').value;
-  let p=db.products.find(x=>x.id==productId);
-  if(!p){ toast('Please select a medicine'); return; }
-  let qty=parseInt(document.getElementById('purQty').value);
-  if(!qty || qty<1){ toast('Please enter valid quantity'); return; }
-  let price=parseFloat(document.getElementById('purPrice').value);
-  if(!price || price<0){ price=p.purchase || 0; }
-  let total=qty*price;
+
+function addPurchaseItem(){
+  let productId = document.getElementById('purAddProduct').value;
+  if(!productId){ toast('Select a medicine'); return; }
+  let qty = parseInt(document.getElementById('purAddQty').value)||1;
+  if(qty<1) qty=1;
+  let price = parseFloat(document.getElementById('purAddPrice').value)||0;
+  let p = db.products.find(x=>x.id==productId);
+  if(!p){ toast('Product not found'); return; }
+  if(price<=0) price = p.purchase || 0;
+  
+  purchaseItems.push({productId:p.id, productName:p.name, qty:qty, price:price});
+  document.getElementById('purAddProduct').value = '';
+  document.getElementById('purAddQty').value = '1';
+  document.getElementById('purAddPrice').value = '';
+  refreshPurchaseItemsUI();
+}
+
+function removePurchaseItem(idx){
+  purchaseItems.splice(idx, 1);
+  refreshPurchaseItemsUI();
+}
+
+function refreshPurchaseItemsUI(){
+  let container = document.getElementById('purchaseItemsList');
+  if(!container) return;
+  let total = 0;
+  if(purchaseItems.length === 0){
+    container.innerHTML = '<div class="empty">No items added yet</div>';
+    document.getElementById('purchaseTotalDisplay').textContent = money(0);
+    return;
+  }
+  let html = purchaseItems.map((item, idx) => {
+    let p = db.products.find(x=>x.id==item.productId);
+    let name = p ? p.name : item.productName || 'Unknown';
+    let totalItem = (item.qty||0)*(item.price||0);
+    total += totalItem;
+    return `
+      <div class="purchase-item">
+        <span style="flex:2;font-weight:500;">${esc(name)}</span>
+        <input class="pur-item-qty" data-idx="${idx}" type="number" value="${item.qty||1}" min="1" style="flex:1;min-width:60px;" onchange="updatePurchaseItem(${idx},'qty',this.value)">
+        <input class="pur-item-price" data-idx="${idx}" type="number" value="${item.price||0}" min="0" step="0.01" style="flex:1;min-width:80px;" onchange="updatePurchaseItem(${idx},'price',this.value)">
+        <span class="item-total">${money(totalItem)}</span>
+        <button class="btn btn-danger btn-sm" onclick="removePurchaseItem(${idx})"><i class="fas fa-times"></i></button>
+      </div>
+    `;
+  }).join('');
+  container.innerHTML = html;
+  document.getElementById('purchaseTotalDisplay').textContent = money(total);
+}
+
+function updatePurchaseItem(idx, field, value){
+  if(idx >= purchaseItems.length) return;
+  if(field === 'qty') purchaseItems[idx].qty = parseInt(value)||1;
+  else if(field === 'price') purchaseItems[idx].price = parseFloat(value)||0;
+  refreshPurchaseItemsUI();
+}
+
+function addPurchaseMulti(){
+  if(purchaseItems.length === 0){ toast('Add at least one item'); return; }
+  let supplierId=document.getElementById('purSupplier').value;
+  let supplier=db.suppliers.find(s=>s.id==supplierId);
+  let total = purchaseItems.reduce((sum, item) => sum + (item.qty||0)*(item.price||0), 0);
   let paidNow=parseFloat(document.getElementById('purPaid').value)||0;
   if(paidNow>total) paidNow=total;
   
-  p.stock = (p.stock || 0) + qty;
-  p.purchase = price;
+  // Update stock for each item
+  purchaseItems.forEach(item => {
+    let p = db.products.find(x=>x.id==item.productId);
+    if(p){
+      p.stock = (p.stock || 0) + item.qty;
+      p.purchase = item.price;
+    }
+  });
   
-  let supplierId=document.getElementById('purSupplier').value;
-  let supplier=db.suppliers.find(s=>s.id==supplierId);
   if(supplier && paidNow<total){
     supplier.due=(supplier.due||0)+(total-paidNow);
   }
@@ -855,47 +967,52 @@ function addPurchase(){
     invoice:document.getElementById('purInvoice').value.trim()||'PUR-'+uid(),
     supplierId:supplier?supplier.id:null,
     supplier:supplier?supplier.name:'Cash Purchase',
-    product:p.name,
-    productId:p.id,
-    qty:qty,
-    price:price,
+    items:JSON.parse(JSON.stringify(purchaseItems)),
     total:total,
     paidNow:paidNow,
     date:document.getElementById('purDate').value||todayStr()
   };
   db.purchases.push(purEntry);
   save();
-  log('Purchase '+p.name+' x'+qty+' total '+money(total));
+  log('Purchase total '+money(total)+' with '+purchaseItems.length+' items');
   closeModal();
+  purchaseItems = [];
   renderPurchases();
   renderProducts();
   renderDashboard();
   toast('Purchase saved successfully!');
   renderPurchaseInvoice(purEntry);
 }
-function updatePurchase(id){
+
+function updatePurchaseMulti(id){
   let entry=db.purchases.find(p=>p.id===id);
   if(!entry){ toast('Purchase not found'); return; }
-  let productId=document.getElementById('purProduct').value;
-  let p=db.products.find(x=>x.id==productId);
-  if(!p){ toast('Please select a medicine'); return; }
-  let qty=parseInt(document.getElementById('purQty').value);
-  if(!qty || qty<1){ toast('Please enter valid quantity'); return; }
-  let price=parseFloat(document.getElementById('purPrice').value);
-  if(!price || price<0){ price=p.purchase || 0; }
+  if(purchaseItems.length === 0){ toast('Add at least one item'); return; }
   
-  let oldProduct=db.products.find(x=>x.id===entry.productId);
-  if(oldProduct) oldProduct.stock = (oldProduct.stock || 0) - entry.qty;
-  
-  let total=qty*price;
-  let paidNow=parseFloat(document.getElementById('purPaid').value)||0;
-  if(paidNow>total) paidNow=total;
-  
-  p.stock = (p.stock || 0) + qty;
-  p.purchase = price;
+  // Restore old stock first
+  if(entry.items){
+    entry.items.forEach(item => {
+      let oldP = db.products.find(x=>x.id==item.productId);
+      if(oldP) oldP.stock = (oldP.stock || 0) - (item.qty||0);
+    });
+  }
   
   let supplierId=document.getElementById('purSupplier').value;
   let supplier=db.suppliers.find(s=>s.id==supplierId);
+  let total = purchaseItems.reduce((sum, item) => sum + (item.qty||0)*(item.price||0), 0);
+  let paidNow=parseFloat(document.getElementById('purPaid').value)||0;
+  if(paidNow>total) paidNow=total;
+  
+  // Update stock for each item
+  purchaseItems.forEach(item => {
+    let p = db.products.find(x=>x.id==item.productId);
+    if(p){
+      p.stock = (p.stock || 0) + item.qty;
+      p.purchase = item.price;
+    }
+  });
+  
+  // Remove old supplier due
   if(entry.supplierId){
     let oldSup=db.suppliers.find(s=>s.id===entry.supplierId);
     if(oldSup) oldSup.due = Math.max(0,(oldSup.due||0) - (entry.total - entry.paidNow));
@@ -907,10 +1024,7 @@ function updatePurchase(id){
   entry.invoice=document.getElementById('purInvoice').value.trim()||entry.invoice;
   entry.supplierId=supplier?supplier.id:null;
   entry.supplier=supplier?supplier.name:'Cash Purchase';
-  entry.product=p.name;
-  entry.productId=p.id;
-  entry.qty=qty;
-  entry.price=price;
+  entry.items=JSON.parse(JSON.stringify(purchaseItems));
   entry.total=total;
   entry.paidNow=paidNow;
   entry.date=document.getElementById('purDate').value||todayStr();
@@ -918,26 +1032,41 @@ function updatePurchase(id){
   save();
   log('Updated purchase '+entry.invoice);
   closeModal();
+  purchaseItems = [];
   renderPurchases();
   renderProducts();
   renderDashboard();
   toast('Purchase updated successfully!');
   renderPurchaseInvoice(entry);
 }
+
 function renderPurchaseInvoice(entry){
   document.getElementById('invBizName').textContent=db.settings.bizName+' - Purchase';
   document.getElementById('invBizMeta').innerHTML=esc(db.settings.address)+'<br>'+esc(db.settings.phone);
   document.getElementById('invoicePanel').className=db.settings.receiptFormat==='thermal'?'panel thermal':'panel';
+  let itemsHTML = '';
+  if(entry.items && entry.items.length){
+    itemsHTML = entry.items.map(item => {
+      let p = db.products.find(x=>x.id==item.productId);
+      let name = p ? p.name : item.productName || 'Unknown';
+      return `<tr><td>${esc(name)}</td><td class="num">${item.qty}</td><td class="num">${money(item.price)}</td><td class="num">${money((item.qty||0)*(item.price||0))}</td></tr>`;
+    }).join('');
+  } else {
+    // Fallback for old single-item purchases
+    itemsHTML = `<tr><td>${esc(entry.product||'Unknown')}</td><td class="num">${entry.qty||0}</td><td class="num">${money(entry.price||0)}</td><td class="num">${money(entry.total||0)}</td></tr>`;
+  }
   document.getElementById('invoiceMeta').innerHTML=`Purchase Invoice: <b>${entry.invoice}</b><br>Date: ${entry.date}<br>Supplier: ${esc(entry.supplier)}<br>Payment: ${entry.paidNow>0?'Paid '+money(entry.paidNow):'Due '+money(entry.total)}`;
-  document.getElementById('invoiceBody').innerHTML=`<table><thead><tr><th>Medicine</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr></thead><tbody><tr><td>${esc(entry.product)}</td><td class="num">${entry.qty}</td><td class="num">${money(entry.price)}</td><td class="num">${money(entry.total)}</td></tr></tbody></table>`;
+  document.getElementById('invoiceBody').innerHTML=`<table><thead><tr><th>Medicine</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr></thead><tbody>${itemsHTML}</tbody></table>`;
   document.getElementById('invoiceTotals').innerHTML=`<div><span>Subtotal</span><b>${money(entry.total)}</b></div><div><span>Paid</span><b>${money(entry.paidNow||0)}</b></div><div class="grand"><span>Balance</span><b>${money(entry.total-(entry.paidNow||0))}</b></div>`;
   showPage('invoice',null);
 }
+
 function renderPurchases(){
   let q=(document.getElementById('purchaseSearch')?.value||'').toLowerCase();
-  let a=db.purchases.filter(x=>(x.invoice+' '+x.supplier+' '+x.product).toLowerCase().includes(q));
-  document.getElementById('purchasesTable').innerHTML=a.length?`<table><thead><tr><th>Invoice</th><th>Date</th><th>Supplier</th><th>Medicine</th><th class="num">Qty</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th></th></tr></thead><tbody>${a.slice().reverse().map(x=>`<tr><td>${esc(x.invoice)}</td><td>${x.date}</td><td>${esc(x.supplier)}</td><td>${esc(x.product)}</td><td class="num">${x.qty}</td><td class="num">${money(x.total)}</td><td class="num">${money(x.paidNow||0)}</td><td class="num">${money(x.total-(x.paidNow||0))}</td><td><button class="btn btn-primary btn-sm" onclick='renderPurchaseInvoice(db.purchases.find(p=>p.id===${x.id}))' title="View Invoice"><i class="fas fa-eye"></i></button> <button class="btn btn-success btn-sm" onclick='openPurchaseModal(${x.id})' title="Edit"><i class="fas fa-edit"></i></button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No purchases found. Add your first purchase!</div>';
+  let a=db.purchases.filter(x=>(x.invoice+' '+x.supplier).toLowerCase().includes(q));
+  document.getElementById('purchasesTable').innerHTML=a.length?`<table><thead><tr><th>Invoice</th><th>Date</th><th>Supplier</th><th class="num">Items</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th></th></tr></thead><tbody>${a.slice().reverse().map(x=>`<tr><td>${esc(x.invoice)}</td><td>${x.date}</td><td>${esc(x.supplier)}</td><td class="num">${x.items?x.items.length:1}</td><td class="num">${money(x.total)}</td><td class="num">${money(x.paidNow||0)}</td><td class="num">${money(x.total-(x.paidNow||0))}</td><td><button class="btn btn-primary btn-sm" onclick='renderPurchaseInvoice(db.purchases.find(p=>p.id===${x.id}))' title="View Invoice"><i class="fas fa-eye"></i></button> <button class="btn btn-success btn-sm" onclick='openPurchaseModal(${x.id})' title="Edit"><i class="fas fa-edit"></i></button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No purchases found. Add your first purchase!</div>';
 }
+
 function openPurchaseReturnModal(){
   openModal('New Purchase Return',`<div class="formgrid"><select id="prSupplier"><option value="">Supplier</option>${db.suppliers.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><select id="prProduct"><option value="">Medicine</option>${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} (stock ${p.stock})</option>`).join('')}</select><input id="prQty" type="number" placeholder="Return qty" value="1"><input id="prPrice" type="number" placeholder="Price/unit"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="savePurchaseReturn()"><i class="fas fa-undo-alt"></i> Process Return</button></div>`);
 }
