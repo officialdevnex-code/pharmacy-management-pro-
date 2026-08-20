@@ -259,6 +259,43 @@
     .stock-low { background: #fee9ed; color: #b00d2a; font-weight: 600; }
     .logo-text { font-weight: 800; color: var(--primary); letter-spacing: 1px; }
     .address-text { font-size: 12px; color: var(--text-muted); }
+
+    /* Responsive Fixes */
+    @media (max-width: 768px) {
+      .sidebar { width: 200px; padding: 14px 10px; }
+      .main { padding: 16px; }
+      .cards { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .grid2 { grid-template-columns: 1fr; }
+      .top h1 { font-size: 20px; }
+      .formgrid { grid-template-columns: 1fr; }
+      .formgrid .wide { grid-column: span 1; }
+    }
+    @media (max-width: 480px) {
+      .app.active { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border-light); }
+      .nav { display: flex; flex-wrap: wrap; gap: 4px; }
+      .nav button { width: auto; padding: 8px 12px; font-size: 12px; }
+      .nav button i { width: 16px; font-size: 0.9rem; }
+      .nav .navgroup { display: none; }
+      .userbox { display: flex; flex-wrap: wrap; gap: 8px; border-top: none; padding-top: 8px; margin-top: 8px; }
+      .userbox .who { width: 100%; }
+      .userbox button { width: auto; padding: 6px 12px; font-size: 12px; }
+      .cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .card { padding: 12px; }
+      .card .value { font-size: 18px; }
+      .main { padding: 12px; }
+      .top { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .clock { font-size: 12px; padding: 4px 12px; }
+      .toolbar { gap: 6px; }
+      .toolbar .btn { padding: 6px 12px; font-size: 12px; }
+      .search { min-width: 120px; }
+      .modalbox { padding: 16px; width: 95%; }
+      table { font-size: 12px; }
+      th, td { padding: 6px 4px; }
+      .totals { max-width: 100%; }
+      .invoice-head { flex-direction: column; align-items: center; text-align: center; }
+      .invoice-head div:last-child { text-align: center; }
+    }
   </style>
 </head>
 <body>
@@ -350,7 +387,7 @@
       <div id="salesTabBill">
         <div class="panel">
           <div class="toolbar">
-            <input class="search" id="saleSearch" placeholder="Search / scan barcode..." oninput="renderSaleItems()" onkeydown="scanBarcode(event)">
+            <input class="search" id="saleSearch" placeholder="Search by name, formula, company..." oninput="renderSaleItems()" onkeydown="scanBarcode(event)">
             <select id="catFilterSale" onchange="renderSaleItems()"><option value="">All Categories</option></select>
             <button class="btn btn-primary" onclick="openCustomerModal()"><i class="fas fa-user-plus"></i> Customer</button>
             <button class="btn btn-dark" onclick="holdBill()"><i class="fas fa-pause"></i> Hold</button>
@@ -391,7 +428,15 @@
         <button class="btn btn-pdf" onclick="exportPDF('purchases','Purchases Report')"><i class="fas fa-file-pdf"></i> PDF</button>
         <button class="btn btn-dark" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
       </div>
-      <div id="purTabList"><div class="panel"><div class="toolbar"><button class="btn btn-primary" onclick="openPurchaseModal()"><i class="fas fa-plus"></i> Add Purchase</button><input class="search" id="purchaseSearch" placeholder="Search..." oninput="renderPurchases()"></div><div id="purchasesTable"></div></div></div>
+      <div id="purTabList">
+        <div class="panel">
+          <div class="toolbar">
+            <button class="btn btn-primary" onclick="openPurchaseModal()"><i class="fas fa-plus"></i> Add Purchase</button>
+            <input class="search" id="purchaseSearch" placeholder="Search..." oninput="renderPurchases()">
+          </div>
+          <div id="purchasesTable"></div>
+        </div>
+      </div>
       <div id="purTabReturns" style="display:none"><div class="panel"><div class="toolbar"><button class="btn btn-primary" onclick="openPurchaseReturnModal()"><i class="fas fa-plus"></i> New Return</button></div><div id="purchaseReturnsTable"></div></div></div>
     </section>
 
@@ -400,7 +445,7 @@
       <div class="toolbar no-print">
         <button class="btn btn-primary" onclick="openProductModal()"><i class="fas fa-plus"></i> Add Medicine</button>
         <button class="btn btn-dark" onclick="openAdjustModal()"><i class="fas fa-adjust"></i> Adjustment</button>
-        <input class="search" id="productSearch" placeholder="Search..." oninput="renderProducts()">
+        <input class="search" id="productSearch" placeholder="Search by name, formula, company..." oninput="renderProducts()">
         <select id="catFilterProd" onchange="renderProducts()"><option value="">All Categories</option></select>
         <button class="btn btn-pdf" onclick="exportPDF('products','Medicine Stock Report')"><i class="fas fa-file-pdf"></i> PDF</button>
         <button class="btn btn-dark" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
@@ -481,6 +526,7 @@
           <button class="btn btn-pdf" onclick="exportPDF('invoice','Invoice')"><i class="fas fa-file-pdf"></i> PDF</button>
           <button class="btn btn-dark" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
           <button class="btn btn-light" onclick="showPage('sales',document.querySelector('.nav button:nth-child(2)'))">Back to Sales</button>
+          <button class="btn btn-light" onclick="showPage('purchases',document.querySelector('.nav button:nth-child(3)'))" style="margin-left:8px;">Back to Purchases</button>
         </div>
       </div>
     </section>
@@ -494,7 +540,7 @@
 
 <script>
 /* ===================================================================
-   PHARMACY MANAGEMENT PRO – FULL SCRIPT
+   PHARMACY MANAGEMENT PRO – FULL SCRIPT (UPDATED)
    =================================================================== */
 const KEY='pharmacyProV2';
 const uid=()=>Date.now()+Math.floor(Math.random()*1000);
@@ -505,10 +551,10 @@ function defaultDB(){
   settings:{bizName:'AL HASNAIN MEDICAL CENTER',phone:'0300-0000000',currency:'Rs',address:'Khewra Road, Choa Saidan Shah',tax:0,receiptFormat:'a4',licensedTo:'',lowStockDefault:24,theme:'light'},
   users:[{id:1,username:'admin',password:'admin123',role:'admin'},{id:2,username:'cashier',password:'cashier123',role:'cashier'}],
   products:[
-   {id:1,name:'Panadol 500mg',barcode:'100001',category:'Tablet',batch:'PN-24A',purchase:8,sale:12,stock:100,min:24,expiry:'2027-06-30'},
-   {id:2,name:'Brufen 400mg',barcode:'100002',category:'Tablet',batch:'BR-24C',purchase:12,sale:18,stock:70,min:24,expiry:'2027-04-30'},
-   {id:3,name:'Augmentin 625mg',barcode:'100003',category:'Antibiotic',batch:'AU-25B',purchase:90,sale:115,stock:25,min:24,expiry:'2027-02-28'},
-   {id:4,name:'Surbex-Z',barcode:'100004',category:'Vitamin',batch:'SZ-24X',purchase:30,sale:42,stock:40,min:24,expiry:'2027-01-15'}
+   {id:1,name:'Panadol 500mg',barcode:'100001',category:'Tablet',batch:'PN-24A',company:'GSK',formula:'Paracetamol 500mg',purchase:8,sale:12,stock:100,min:24,expiry:'2027-06-30'},
+   {id:2,name:'Brufen 400mg',barcode:'100002',category:'Tablet',batch:'BR-24C',company:'Abbott',formula:'Ibuprofen 400mg',purchase:12,sale:18,stock:70,min:24,expiry:'2027-04-30'},
+   {id:3,name:'Augmentin 625mg',barcode:'100003',category:'Antibiotic',batch:'AU-25B',company:'GSK',formula:'Amoxicillin + Clavulanic Acid',purchase:90,sale:115,stock:25,min:24,expiry:'2027-02-28'},
+   {id:4,name:'Surbex-Z',barcode:'100004',category:'Vitamin',batch:'SZ-24X',company:'Abbott',formula:'Multivitamin with Zinc',purchase:30,sale:42,stock:40,min:24,expiry:'2027-01-15'}
   ],
   customers:[{id:1,name:'Walk-in Customer',phone:'',address:'',due:0}],
   suppliers:[],
@@ -519,7 +565,16 @@ function defaultDB(){
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||defaultDB();
 if(!db.customers.length)db.customers.push({id:1,name:'Walk-in Customer',phone:'',address:'',due:0});
 if(!db.salesReturns)db.salesReturns=[];if(!db.purchaseReturns)db.purchaseReturns=[];if(!db.stockAdjustments)db.stockAdjustments=[];if(!db.activityLog)db.activityLog=[];if(!db.heldBills)db.heldBills=[];
-let cart=[];
+
+// Ensure each product has required fields
+db.products.forEach(p=>{ 
+  if(p.min===undefined) p.min=24; 
+  if(!p.company) p.company=''; 
+  if(!p.formula) p.formula=''; 
+});
+db.suppliers.forEach(s=>{ if(s.due===undefined) s.due=0; });
+
+let cart=[]; let editingPurchaseId=null;
 let currentUser=JSON.parse(sessionStorage.getItem('pharmacyCurrentUser')||'null');
 
 const money=n=>(db.settings.currency||'Rs')+' '+Number(n||0).toLocaleString('en-PK',{maximumFractionDigits:2});
@@ -597,16 +652,12 @@ function closeModal(){ document.getElementById('modal').classList.remove('open')
 function exportPDF(pageId, filename){
   let el=document.getElementById(pageId);
   if(!el){ toast('Page not found'); return; }
-  // Clone for PDF
   let clone=el.cloneNode(true);
-  // Remove no-print elements
   clone.querySelectorAll('.no-print').forEach(el=>el.remove());
-  // Show all data
   clone.style.display='block';
   clone.style.background='#fff';
   clone.style.padding='20px';
   clone.style.color='#000';
-  // Add business header
   let header=document.createElement('div');
   header.style.cssText='text-align:center;border-bottom:2px solid #b70e2a;padding-bottom:10px;margin-bottom:20px;';
   header.innerHTML=`<h2 style="color:#b70e2a;margin:0;">${esc(db.settings.bizName)}</h2><p style="margin:2px 0;font-size:13px;color:#555;">${esc(db.settings.address)} | ${esc(db.settings.phone)}</p><p style="margin:2px 0;font-size:12px;color:#777;">${filename} - ${new Date().toLocaleString()}</p>`;
@@ -679,8 +730,8 @@ function showSalesTab(tab){
 function scanBarcode(e){ if(e.key!=='Enter')return; let v=document.getElementById('saleSearch')?.value.trim(); if(!v)return; let p=db.products.find(x=>x.barcode===v); if(p){addToCart(p.id); document.getElementById('saleSearch').value=''; renderSaleItems();} }
 function renderSaleItems(){
   let q=(document.getElementById('saleSearch')?.value||'').toLowerCase(), cat=document.getElementById('catFilterSale')?.value||'';
-  let a=db.products.filter(p=>(p.name+' '+p.barcode).toLowerCase().includes(q)&&(!cat||p.category===cat));
-  document.getElementById('saleItems').innerHTML=a.length?`<table><thead><tr><th>Medicine</th><th>Batch/Barcode</th><th>Category</th><th class="num">Price</th><th class="num">Stock</th><th></th></tr></thead><tbody>${a.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.batch||'')} / ${esc(p.barcode)}</td><td>${esc(p.category||'-')}</td><td class="num">${money(p.sale)}</td><td class="num">${p.stock<=p.min?'<span class="badge b-red">':''}${p.stock}${p.stock<=p.min?'</span>':''}</td><td class="num"><button class="btn btn-success btn-sm" onclick="addToCart(${p.id})" ${p.stock<=0?'disabled':''}><i class="fas fa-plus"></i> Add</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No medicine found</div>';
+  let a=db.products.filter(p=>(p.name+' '+p.barcode+' '+p.formula+' '+p.company).toLowerCase().includes(q)&&(!cat||p.category===cat));
+  document.getElementById('saleItems').innerHTML=a.length?`<table><thead><tr><th>Medicine</th><th>Company</th><th>Formula</th><th>Batch/Barcode</th><th>Category</th><th class="num">Price</th><th class="num">Stock</th><th></th></tr></thead><tbody>${a.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.company||'-')}</td><td>${esc(p.formula||'-')}</td><td>${esc(p.batch||'')} / ${esc(p.barcode)}</td><td>${esc(p.category||'-')}</td><td class="num">${money(p.sale)}</td><td class="num">${p.stock<=p.min?'<span class="badge b-red">':''}${p.stock}${p.stock<=p.min?'</span>':''}</td><td class="num"><button class="btn btn-success btn-sm" onclick="addToCart(${p.id})" ${p.stock<=0?'disabled':''}><i class="fas fa-plus"></i> Add</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No medicine found</div>';
 }
 function addToCart(id){ let p=db.products.find(x=>x.id===id); if(!p||p.stock<=0)return toast('Out of stock'); let c=cart.find(x=>x.id===id); if(c){ if(c.qty>=p.stock)return toast('Stock limit'); c.qty++; } else cart.push({id,qty:1}); renderCart(); renderSaleItems(); }
 function renderCart(){
@@ -769,26 +820,126 @@ function showPurTab(tab){
   if(b2)b2.className=tab==='returns'?'btn btn-primary':'btn btn-light';
   if(tab==='returns')renderPurchaseReturns();
 }
-function openPurchaseModal(){
-  let opts=db.suppliers.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
-  openModal('Add Purchase',`<div class="formgrid"><input id="purInvoice" placeholder="Invoice #"><select id="purSupplier"><option value="">Supplier</option>${opts}</select><select id="purProduct"><option value="">Medicine</option>${db.products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select><input id="purQty" type="number" placeholder="Quantity"><input id="purPrice" type="number" placeholder="Purchase price/unit"><input id="purDate" type="date" value="${todayStr()}"><input id="purPaid" type="number" placeholder="Amount paid now" value="0"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="addPurchase()"><i class="fas fa-save"></i> Save</button></div>`);
+function openPurchaseModal(editId=null){
+  editingPurchaseId=editId;
+  let entry=editId?db.purchases.find(p=>p.id===editId):null;
+  let opts=db.suppliers.map(s=>`<option value="${s.id}" ${entry && entry.supplierId==s.id?'selected':''}>${esc(s.name)}</option>`).join('');
+  let productOpts=db.products.map(p=>`<option value="${p.id}" ${entry && entry.productId==p.id?'selected':''}>${esc(p.name)} (stock: ${p.stock})</option>`).join('');
+  let title=editId?'Edit Purchase':'Add Purchase';
+  let btnText=editId?'Update Purchase':'Save Purchase';
+  openModal(title,`<div class="formgrid"><input id="purInvoice" placeholder="Invoice #" value="${entry?esc(entry.invoice):'PUR-'+uid()}"><select id="purSupplier"><option value="">Select Supplier</option>${opts}</select><select id="purProduct"><option value="">Select Medicine</option>${productOpts}</select><input id="purQty" type="number" placeholder="Quantity" value="${entry?entry.qty:1}"><input id="purPrice" type="number" placeholder="Purchase price/unit" value="${entry?entry.price:''}"><input id="purDate" type="date" value="${entry?entry.date:todayStr()}"><input id="purPaid" type="number" placeholder="Amount paid now" value="${entry?entry.paidNow:0}"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="${editId?'updatePurchase('+editId+')':'addPurchase()'}"><i class="fas fa-save"></i> ${btnText}</button></div>`);
 }
 function addPurchase(){
-  let p=db.products.find(x=>x.id==document.getElementById('purProduct').value); if(!p||!document.getElementById('purQty').value)return toast('Select medicine & qty');
-  let q=+document.getElementById('purQty').value, price=+document.getElementById('purPrice').value||p.purchase, total=q*price, paidNow=Math.min(+document.getElementById('purPaid').value||0,total);
-  p.stock+=q; p.purchase=price;
-  let supplier=db.suppliers.find(s=>s.id==document.getElementById('purSupplier').value);
-  if(supplier&&paidNow<total)supplier.due=(supplier.due||0)+(total-paidNow);
-  db.purchases.push({id:uid(),invoice:document.getElementById('purInvoice').value||'PUR-'+uid(),supplierId:supplier?supplier.id:null,supplier:supplier?supplier.name:'Cash Purchase',product:p.name,qty,price,total,paidNow,date:document.getElementById('purDate').value});
-  save(); log('Purchase '+p.name+' x'+q); closeModal(); renderPurchases(); renderProducts(); renderDashboard(); toast('Purchase saved');
+  let productId=document.getElementById('purProduct').value;
+  let p=db.products.find(x=>x.id==productId);
+  if(!p){ toast('Please select a medicine'); return; }
+  let qty=parseInt(document.getElementById('purQty').value);
+  if(!qty || qty<1){ toast('Please enter valid quantity'); return; }
+  let price=parseFloat(document.getElementById('purPrice').value);
+  if(!price || price<0){ price=p.purchase || 0; }
+  let total=qty*price;
+  let paidNow=parseFloat(document.getElementById('purPaid').value)||0;
+  if(paidNow>total) paidNow=total;
+  
+  p.stock = (p.stock || 0) + qty;
+  p.purchase = price;
+  
+  let supplierId=document.getElementById('purSupplier').value;
+  let supplier=db.suppliers.find(s=>s.id==supplierId);
+  if(supplier && paidNow<total){
+    supplier.due=(supplier.due||0)+(total-paidNow);
+  }
+  
+  let purEntry={
+    id:uid(),
+    invoice:document.getElementById('purInvoice').value.trim()||'PUR-'+uid(),
+    supplierId:supplier?supplier.id:null,
+    supplier:supplier?supplier.name:'Cash Purchase',
+    product:p.name,
+    productId:p.id,
+    qty:qty,
+    price:price,
+    total:total,
+    paidNow:paidNow,
+    date:document.getElementById('purDate').value||todayStr()
+  };
+  db.purchases.push(purEntry);
+  save();
+  log('Purchase '+p.name+' x'+qty+' total '+money(total));
+  closeModal();
+  renderPurchases();
+  renderProducts();
+  renderDashboard();
+  toast('Purchase saved successfully!');
+  renderPurchaseInvoice(purEntry);
+}
+function updatePurchase(id){
+  let entry=db.purchases.find(p=>p.id===id);
+  if(!entry){ toast('Purchase not found'); return; }
+  let productId=document.getElementById('purProduct').value;
+  let p=db.products.find(x=>x.id==productId);
+  if(!p){ toast('Please select a medicine'); return; }
+  let qty=parseInt(document.getElementById('purQty').value);
+  if(!qty || qty<1){ toast('Please enter valid quantity'); return; }
+  let price=parseFloat(document.getElementById('purPrice').value);
+  if(!price || price<0){ price=p.purchase || 0; }
+  
+  let oldProduct=db.products.find(x=>x.id===entry.productId);
+  if(oldProduct) oldProduct.stock = (oldProduct.stock || 0) - entry.qty;
+  
+  let total=qty*price;
+  let paidNow=parseFloat(document.getElementById('purPaid').value)||0;
+  if(paidNow>total) paidNow=total;
+  
+  p.stock = (p.stock || 0) + qty;
+  p.purchase = price;
+  
+  let supplierId=document.getElementById('purSupplier').value;
+  let supplier=db.suppliers.find(s=>s.id==supplierId);
+  if(entry.supplierId){
+    let oldSup=db.suppliers.find(s=>s.id===entry.supplierId);
+    if(oldSup) oldSup.due = Math.max(0,(oldSup.due||0) - (entry.total - entry.paidNow));
+  }
+  if(supplier && paidNow<total){
+    supplier.due=(supplier.due||0)+(total-paidNow);
+  }
+  
+  entry.invoice=document.getElementById('purInvoice').value.trim()||entry.invoice;
+  entry.supplierId=supplier?supplier.id:null;
+  entry.supplier=supplier?supplier.name:'Cash Purchase';
+  entry.product=p.name;
+  entry.productId=p.id;
+  entry.qty=qty;
+  entry.price=price;
+  entry.total=total;
+  entry.paidNow=paidNow;
+  entry.date=document.getElementById('purDate').value||todayStr();
+  
+  save();
+  log('Updated purchase '+entry.invoice);
+  closeModal();
+  renderPurchases();
+  renderProducts();
+  renderDashboard();
+  toast('Purchase updated successfully!');
+  renderPurchaseInvoice(entry);
+}
+function renderPurchaseInvoice(entry){
+  document.getElementById('invBizName').textContent=db.settings.bizName+' - Purchase';
+  document.getElementById('invBizMeta').innerHTML=esc(db.settings.address)+'<br>'+esc(db.settings.phone);
+  document.getElementById('invoicePanel').className=db.settings.receiptFormat==='thermal'?'panel thermal':'panel';
+  document.getElementById('invoiceMeta').innerHTML=`Purchase Invoice: <b>${entry.invoice}</b><br>Date: ${entry.date}<br>Supplier: ${esc(entry.supplier)}<br>Payment: ${entry.paidNow>0?'Paid '+money(entry.paidNow):'Due '+money(entry.total)}`;
+  document.getElementById('invoiceBody').innerHTML=`<table><thead><tr><th>Medicine</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr></thead><tbody><tr><td>${esc(entry.product)}</td><td class="num">${entry.qty}</td><td class="num">${money(entry.price)}</td><td class="num">${money(entry.total)}</td></tr></tbody></table>`;
+  document.getElementById('invoiceTotals').innerHTML=`<div><span>Subtotal</span><b>${money(entry.total)}</b></div><div><span>Paid</span><b>${money(entry.paidNow||0)}</b></div><div class="grand"><span>Balance</span><b>${money(entry.total-(entry.paidNow||0))}</b></div>`;
+  showPage('invoice',null);
 }
 function renderPurchases(){
   let q=(document.getElementById('purchaseSearch')?.value||'').toLowerCase();
   let a=db.purchases.filter(x=>(x.invoice+' '+x.supplier+' '+x.product).toLowerCase().includes(q));
-  document.getElementById('purchasesTable').innerHTML=a.length?`<table><thead><tr><th>Invoice</th><th>Date</th><th>Supplier</th><th>Medicine</th><th class="num">Qty</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th></tr></thead><tbody>${a.slice().reverse().map(x=>`<tr><td>${esc(x.invoice)}</td><td>${x.date}</td><td>${esc(x.supplier)}</td><td>${esc(x.product)}</td><td class="num">${x.qty}</td><td class="num">${money(x.total)}</td><td class="num">${money(x.paidNow||0)}</td><td class="num">${money(x.total-(x.paidNow||0))}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No purchases</div>';
+  document.getElementById('purchasesTable').innerHTML=a.length?`<table><thead><tr><th>Invoice</th><th>Date</th><th>Supplier</th><th>Medicine</th><th class="num">Qty</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th></th></tr></thead><tbody>${a.slice().reverse().map(x=>`<tr><td>${esc(x.invoice)}</td><td>${x.date}</td><td>${esc(x.supplier)}</td><td>${esc(x.product)}</td><td class="num">${x.qty}</td><td class="num">${money(x.total)}</td><td class="num">${money(x.paidNow||0)}</td><td class="num">${money(x.total-(x.paidNow||0))}</td><td><button class="btn btn-primary btn-sm" onclick='renderPurchaseInvoice(db.purchases.find(p=>p.id===${x.id}))' title="View Invoice"><i class="fas fa-eye"></i></button> <button class="btn btn-success btn-sm" onclick='openPurchaseModal(${x.id})' title="Edit"><i class="fas fa-edit"></i></button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No purchases found. Add your first purchase!</div>';
 }
 function openPurchaseReturnModal(){
-  openModal('New Purchase Return',`<div class="formgrid"><select id="prSupplier"><option value="">Supplier</option>${db.suppliers.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><select id="prProduct"><option value="">Medicine</option>${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} (stock ${p.stock})</option>`).join('')}</select><input id="prQty" type="number" placeholder="Return qty"><input id="prPrice" type="number" placeholder="Price/unit"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="savePurchaseReturn()"><i class="fas fa-undo-alt"></i> Process</button></div>`);
+  openModal('New Purchase Return',`<div class="formgrid"><select id="prSupplier"><option value="">Supplier</option>${db.suppliers.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><select id="prProduct"><option value="">Medicine</option>${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} (stock ${p.stock})</option>`).join('')}</select><input id="prQty" type="number" placeholder="Return qty" value="1"><input id="prPrice" type="number" placeholder="Price/unit"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="savePurchaseReturn()"><i class="fas fa-undo-alt"></i> Process Return</button></div>`);
 }
 function savePurchaseReturn(){
   let p=db.products.find(x=>x.id==document.getElementById('prProduct').value); if(!p||!document.getElementById('prQty').value)return toast('Select medicine & qty');
@@ -804,23 +955,23 @@ function renderPurchaseReturns(){
   el.innerHTML=db.purchaseReturns.length?`<table><thead><tr><th>Return #</th><th>Date</th><th>Supplier</th><th>Medicine</th><th class="num">Qty</th><th class="num">Total</th></tr></thead><tbody>${db.purchaseReturns.slice().reverse().map(x=>`<tr><td>${x.returnNo}</td><td>${new Date(x.date).toLocaleString()}</td><td>${esc(x.supplier)}</td><td>${esc(x.product)}</td><td class="num">${x.qty}</td><td class="num">${money(x.total)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No returns</div>';
 }
 
-/* ===== PRODUCTS ===== */
+/* ===== PRODUCTS (UPDATED - formula, company) ===== */
 function openProductModal(){
-  openModal('Add Medicine',`<div class="formgrid"><input id="pname" placeholder="Medicine name"><input id="pbarcode" placeholder="Barcode"><input id="pcat" placeholder="Category"><input id="pbatch" placeholder="Batch"><input id="ppurchase" type="number" placeholder="Purchase price"><input id="psale" type="number" placeholder="Sale price"><input id="pstock" type="number" placeholder="Opening stock"><input id="pmin" type="number" placeholder="Min stock" value="${db.settings.lowStockDefault||24}"><input id="pexpiry" type="date" class="wide"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="addProduct()"><i class="fas fa-plus"></i> Save</button></div>`);
+  openModal('Add Medicine',`<div class="formgrid"><input id="pname" placeholder="Medicine name"><input id="pbarcode" placeholder="Barcode"><input id="pcat" placeholder="Category"><input id="pbatch" placeholder="Batch"><input id="pcompany" placeholder="Company / Manufacturer"><input id="pformula" placeholder="Formula / Generic Name"><input id="ppurchase" type="number" placeholder="Purchase price"><input id="psale" type="number" placeholder="Sale price"><input id="pstock" type="number" placeholder="Opening stock" value="0"><input id="pmin" type="number" placeholder="Min stock" value="${db.settings.lowStockDefault||24}"><input id="pexpiry" type="date" class="wide"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="addProduct()"><i class="fas fa-plus"></i> Save</button></div>`);
 }
 function addProduct(){
-  let p={id:uid(),name:document.getElementById('pname').value.trim(),barcode:document.getElementById('pbarcode').value.trim(),category:document.getElementById('pcat').value.trim(),batch:document.getElementById('pbatch').value.trim(),purchase:+document.getElementById('ppurchase').value||0,sale:+document.getElementById('psale').value||0,stock:+document.getElementById('pstock').value||0,min:+document.getElementById('pmin').value||24,expiry:document.getElementById('pexpiry').value};
+  let p={id:uid(),name:document.getElementById('pname').value.trim(),barcode:document.getElementById('pbarcode').value.trim(),category:document.getElementById('pcat').value.trim(),batch:document.getElementById('pbatch').value.trim(),company:document.getElementById('pcompany').value.trim(),formula:document.getElementById('pformula').value.trim(),purchase:+document.getElementById('ppurchase').value||0,sale:+document.getElementById('psale').value||0,stock:+document.getElementById('pstock').value||0,min:+document.getElementById('pmin').value||24,expiry:document.getElementById('pexpiry').value};
   if(!p.name)return toast('Name required');
   db.products.push(p); save(); log('Medicine '+p.name); closeModal(); populateCategoryFilters(); renderProducts(); renderDashboard(); toast('Added');
 }
 function renderProducts(){
   let q=(document.getElementById('productSearch')?.value||'').toLowerCase(), cat=document.getElementById('catFilterProd')?.value||'';
-  let a=db.products.filter(p=>(p.name+' '+p.barcode).toLowerCase().includes(q)&&(!cat||p.category===cat));
-  document.getElementById('productsTable').innerHTML=a.length?`<table><thead><tr><th>Medicine</th><th>Barcode</th><th>Category</th><th>Batch</th><th class="num">Purchase</th><th class="num">Sale</th><th class="num">Stock</th><th>Expiry</th><th>Status</th><th>Action</th></tr></thead><tbody>${a.map(p=>{ let nearExp=p.expiry&&p.expiry<new Date(Date.now()+45*864e5).toISOString().slice(0,10); let low=p.stock<=p.min; return `<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.barcode)}</td><td>${esc(p.category)}</td><td>${esc(p.batch||'-')}</td><td class="num">${money(p.purchase)}</td><td class="num">${money(p.sale)}</td><td class="num ${low?'stock-low':''}">${p.stock}</td><td>${p.expiry||'-'}</td><td>${low?'<span class="badge b-red">Low</span>':'<span class="badge b-green">OK</span>'} ${nearExp?'<span class="badge b-amber">Expiring</span>':''}</td><td><button class="btn btn-sm btn-primary" onclick="openEditProduct(${p.id})"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-success" onclick="openQuickAdjust(${p.id})"><i class="fas fa-plus-minus"></i></button></td></tr>`; }).join('')}</tbody></table>`:'<div class="empty">No medicines</div>';
+  let a=db.products.filter(p=>(p.name+' '+p.barcode+' '+p.formula+' '+p.company).toLowerCase().includes(q)&&(!cat||p.category===cat));
+  document.getElementById('productsTable').innerHTML=a.length?`<table><thead><tr><th>Medicine</th><th>Company</th><th>Formula</th><th>Barcode</th><th>Category</th><th>Batch</th><th class="num">Purchase</th><th class="num">Sale</th><th class="num">Stock</th><th>Expiry</th><th>Status</th><th>Action</th></tr></thead><tbody>${a.map(p=>{ let nearExp=p.expiry&&p.expiry<new Date(Date.now()+45*864e5).toISOString().slice(0,10); let low=p.stock<=p.min; return `<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.company||'-')}</td><td>${esc(p.formula||'-')}</td><td>${esc(p.barcode)}</td><td>${esc(p.category)}</td><td>${esc(p.batch||'-')}</td><td class="num">${money(p.purchase)}</td><td class="num">${money(p.sale)}</td><td class="num ${low?'stock-low':''}">${p.stock}</td><td>${p.expiry||'-'}</td><td>${low?'<span class="badge b-red">Low</span>':'<span class="badge b-green">OK</span>'} ${nearExp?'<span class="badge b-amber">Expiring</span>':''}</td><td><button class="btn btn-sm btn-primary" onclick="openEditProduct(${p.id})"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})"><i class="fas fa-trash"></i></button> <button class="btn btn-sm btn-success" onclick="openQuickAdjust(${p.id})"><i class="fas fa-plus-minus"></i></button></td></tr>`; }).join('')}</tbody></table>`:'<div class="empty">No medicines</div>';
 }
 function openEditProduct(id){
   let p=db.products.find(x=>x.id===id); if(!p)return;
-  openModal('Edit Medicine',`<div class="formgrid"><input id="epname" value="${esc(p.name)}" placeholder="Medicine name"><input id="epbarcode" value="${esc(p.barcode)}" placeholder="Barcode"><input id="epcat" value="${esc(p.category)}" placeholder="Category"><input id="epbatch" value="${esc(p.batch||'')}" placeholder="Batch"><input id="eppurchase" type="number" value="${p.purchase}" placeholder="Purchase price"><input id="epsale" type="number" value="${p.sale}" placeholder="Sale price"><input id="epstock" type="number" value="${p.stock}" placeholder="Stock"><input id="epmin" type="number" value="${p.min}" placeholder="Min stock"><input id="epexpiry" type="date" value="${p.expiry||''}" class="wide"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveEditProduct(${id})"><i class="fas fa-save"></i> Update</button></div>`);
+  openModal('Edit Medicine',`<div class="formgrid"><input id="epname" value="${esc(p.name)}" placeholder="Medicine name"><input id="epbarcode" value="${esc(p.barcode)}" placeholder="Barcode"><input id="epcat" value="${esc(p.category)}" placeholder="Category"><input id="epbatch" value="${esc(p.batch||'')}" placeholder="Batch"><input id="epcompany" value="${esc(p.company||'')}" placeholder="Company / Manufacturer"><input id="epformula" value="${esc(p.formula||'')}" placeholder="Formula / Generic Name"><input id="eppurchase" type="number" value="${p.purchase}" placeholder="Purchase price"><input id="epsale" type="number" value="${p.sale}" placeholder="Sale price"><input id="epstock" type="number" value="${p.stock}" placeholder="Stock"><input id="epmin" type="number" value="${p.min}" placeholder="Min stock"><input id="epexpiry" type="date" value="${p.expiry||''}" class="wide"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveEditProduct(${id})"><i class="fas fa-save"></i> Update</button></div>`);
 }
 function saveEditProduct(id){
   let p=db.products.find(x=>x.id===id); if(!p)return;
@@ -828,6 +979,8 @@ function saveEditProduct(id){
   p.barcode=document.getElementById('epbarcode').value.trim();
   p.category=document.getElementById('epcat').value.trim();
   p.batch=document.getElementById('epbatch').value.trim();
+  p.company=document.getElementById('epcompany').value.trim();
+  p.formula=document.getElementById('epformula').value.trim();
   p.purchase=+document.getElementById('eppurchase').value||0;
   p.sale=+document.getElementById('epsale').value||0;
   p.stock=+document.getElementById('epstock').value||0;
@@ -835,9 +988,15 @@ function saveEditProduct(id){
   p.expiry=document.getElementById('epexpiry').value;
   save(); log('Edited medicine '+p.name); closeModal(); renderProducts(); renderDashboard(); toast('Updated');
 }
+function deleteProduct(id){
+  if(!confirm('Delete this medicine permanently?'))return;
+  let p=db.products.find(x=>x.id===id);
+  db.products=db.products.filter(x=>x.id!==id);
+  save(); log('Deleted medicine '+p.name); renderProducts(); renderDashboard(); toast('Deleted');
+}
 function openQuickAdjust(id){
   let p=db.products.find(x=>x.id===id); if(!p)return;
-  openModal('Quick Stock Adjust',`<div class="formgrid"><div><b>${esc(p.name)}</b><br>Current stock: <b>${p.stock}</b></div><select id="qadjType"><option value="add">Add (+)</option><option value="remove">Remove (-)</option></select><input id="qadjQty" type="number" min="1" placeholder="Quantity"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveQuickAdjust(${id})"><i class="fas fa-adjust"></i> Apply</button></div>`);
+  openModal('Quick Stock Adjust',`<div class="formgrid"><div><b>${esc(p.name)}</b><br>Current stock: <b>${p.stock}</b></div><select id="qadjType"><option value="add">Add (+)</option><option value="remove">Remove (-)</option></select><input id="qadjQty" type="number" min="1" placeholder="Quantity" value="1"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveQuickAdjust(${id})"><i class="fas fa-adjust"></i> Apply</button></div>`);
 }
 function saveQuickAdjust(id){
   let p=db.products.find(x=>x.id===id); if(!p)return;
@@ -849,7 +1008,7 @@ function saveQuickAdjust(id){
   save(); log('Quick adjust '+p.name+' '+ (add?'+':'-')+q); closeModal(); renderProducts(); renderAdjustTable(); renderDashboard(); toast('Stock updated');
 }
 function openAdjustModal(){
-  openModal('Stock Adjustment',`<div class="formgrid"><select id="adjProduct">${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} (stock ${p.stock})</option>`).join('')}</select><select id="adjReason"><option>Damaged</option><option>Expired</option><option>Correction Add</option><option>Correction Remove</option></select><input id="adjQty" type="number" min="1" placeholder="Quantity"><input id="adjNote" placeholder="Note" class="wide"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveAdjustment()"><i class="fas fa-adjust"></i> Apply</button></div>`);
+  openModal('Stock Adjustment',`<div class="formgrid"><select id="adjProduct">${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} (stock ${p.stock})</option>`).join('')}</select><select id="adjReason"><option>Damaged</option><option>Expired</option><option>Correction Add</option><option>Correction Remove</option></select><input id="adjQty" type="number" min="1" placeholder="Quantity" value="1"><input id="adjNote" placeholder="Note" class="wide"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveAdjustment()"><i class="fas fa-adjust"></i> Apply</button></div>`);
 }
 function saveAdjustment(){
   let p=db.products.find(x=>x.id==document.getElementById('adjProduct').value); let q=+document.getElementById('adjQty').value; if(!p||!q)return toast('Select medicine & qty');
@@ -864,21 +1023,64 @@ function renderAdjustTable(){
   el.innerHTML=db.stockAdjustments.length?`<table><thead><tr><th>Date</th><th>Medicine</th><th>Reason</th><th class="num">Qty</th><th>Note</th><th>By</th></tr></thead><tbody>${db.stockAdjustments.slice().reverse().map(a=>`<tr><td>${new Date(a.date).toLocaleString()}</td><td>${esc(a.product)}</td><td>${esc(a.reason)}</td><td class="num">${a.qty}</td><td>${esc(a.note||'-')}</td><td>${esc(a.user)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No adjustments</div>';
 }
 
-/* ===== CUSTOMERS / SUPPLIERS ===== */
-function openCustomerModal(){ openModal('Add Customer',`<div class="formgrid"><input id="cname" placeholder="Name"><input id="cphone" placeholder="Phone"><input id="caddress" placeholder="Address" class="wide"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="addCustomer()">Save</button></div>`); }
-function addCustomer(){ if(!document.getElementById('cname').value.trim())return toast('Name required'); db.customers.push({id:uid(),name:document.getElementById('cname').value.trim(),phone:document.getElementById('cphone').value,address:document.getElementById('caddress').value,due:0}); save(); log('Customer '+document.getElementById('cname').value.trim()); closeModal(); renderCustomers(); populateCustomerSelect(); toast('Added'); }
+/* ===== CUSTOMERS (UPDATED - Edit & Delete) ===== */
+function openCustomerModal(editId=null){
+  let entry=editId?db.customers.find(c=>c.id===editId):null;
+  let title=editId?'Edit Customer':'Add Customer';
+  let btnText=editId?'Update Customer':'Save Customer';
+  openModal(title,`<div class="formgrid"><input id="cname" placeholder="Name" value="${entry?esc(entry.name):''}"><input id="cphone" placeholder="Phone" value="${entry?esc(entry.phone):''}"><input id="caddress" placeholder="Address" class="wide" value="${entry?esc(entry.address):''}"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="${editId?'updateCustomer('+editId+')':'addCustomer()'}"><i class="fas fa-save"></i> ${btnText}</button></div>`);
+}
+function addCustomer(){ 
+  if(!document.getElementById('cname').value.trim())return toast('Name required'); 
+  db.customers.push({id:uid(),name:document.getElementById('cname').value.trim(),phone:document.getElementById('cphone').value,address:document.getElementById('caddress').value,due:0}); 
+  save(); log('Customer '+document.getElementById('cname').value.trim()); closeModal(); renderCustomers(); populateCustomerSelect(); toast('Added'); 
+}
+function updateCustomer(id){
+  let c=db.customers.find(x=>x.id===id); if(!c)return;
+  c.name=document.getElementById('cname').value.trim()||c.name;
+  c.phone=document.getElementById('cphone').value;
+  c.address=document.getElementById('caddress').value;
+  save(); log('Updated customer '+c.name); closeModal(); renderCustomers(); populateCustomerSelect(); toast('Updated');
+}
+function deleteCustomer(id){
+  if(id===1){ toast('Cannot delete Walk-in Customer'); return; }
+  if(!confirm('Delete this customer?'))return;
+  let c=db.customers.find(x=>x.id===id);
+  db.customers=db.customers.filter(x=>x.id!==id);
+  save(); log('Deleted customer '+c.name); renderCustomers(); populateCustomerSelect(); toast('Deleted');
+}
 function renderCustomers(){
-  let q=(document.getElementById('customerSearch')?.value||'').toLowerCase(); let a=db.customers.filter(x=>x.name!=='Walk-in Customer'&&(x.name+' '+x.phone).toLowerCase().includes(q));
-  document.getElementById('customersTable').innerHTML=a.length?`<table><thead><tr><th>Name</th><th>Phone</th><th>Address</th><th class="num">Due</th><th></th></tr></thead><tbody>${a.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.phone)}</td><td>${esc(x.address)}</td><td class="num">${x.due?'<span class="badge b-red">'+money(x.due)+'</span>':money(0)}</td><td>${x.due>0?`<button class="btn btn-success btn-sm" onclick="openReceivePayment(${x.id})"><i class="fas fa-hand-holding-usd"></i></button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No customers</div>';
+  let q=(document.getElementById('customerSearch')?.value||'').toLowerCase(); 
+  let a=db.customers.filter(x=>x.name!=='Walk-in Customer'&&(x.name+' '+x.phone).toLowerCase().includes(q));
+  document.getElementById('customersTable').innerHTML=a.length?`<table><thead><tr><th>Name</th><th>Phone</th><th>Address</th><th class="num">Due</th><th>Action</th></tr></thead><tbody>${a.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.phone)}</td><td>${esc(x.address)}</td><td class="num">${x.due?'<span class="badge b-red">'+money(x.due)+'</span>':money(0)}</td><td><button class="btn btn-success btn-sm" onclick="openReceivePayment(${x.id})"><i class="fas fa-hand-holding-usd"></i></button> <button class="btn btn-primary btn-sm" onclick="openCustomerModal(${x.id})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${x.id})"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No customers</div>';
 }
 function openReceivePayment(id){ let c=db.customers.find(x=>x.id===id); if(!c)return; openModal('Receive Payment',`<div class="pill" style="margin-bottom:12px">Due: ${money(c.due)}</div><input id="recvAmt" type="number" placeholder="Amount"><div style="margin-top:14px;text-align:right"><button class="btn btn-primary" onclick="receivePayment(${id})">Save</button></div>`); }
 function receivePayment(id){ let c=db.customers.find(x=>x.id===id); let amt=Math.min(+document.getElementById('recvAmt').value||0,c.due); if(!amt)return toast('Enter valid amount'); c.due-=amt; save(); log('Received Rs '+amt+' from '+c.name); closeModal(); renderCustomers(); populateCustomerSelect(); renderDashboard(); toast('Payment recorded'); }
 
-function openSupplierModal(){ openModal('Add Supplier',`<div class="formgrid"><input id="sname" placeholder="Name"><input id="sphone" placeholder="Phone"><input id="saddress" placeholder="Address" class="wide"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="addSupplier()">Save</button></div>`); }
+/* ===== SUPPLIERS (UPDATED - Edit & Delete) ===== */
+function openSupplierModal(editId=null){
+  let entry=editId?db.suppliers.find(s=>s.id===editId):null;
+  let title=editId?'Edit Supplier':'Add Supplier';
+  let btnText=editId?'Update Supplier':'Save Supplier';
+  openModal(title,`<div class="formgrid"><input id="sname" placeholder="Name" value="${entry?esc(entry.name):''}"><input id="sphone" placeholder="Phone" value="${entry?esc(entry.phone):''}"><input id="saddress" placeholder="Address" class="wide" value="${entry?esc(entry.address):''}"></div><div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="${editId?'updateSupplier('+editId+')':'addSupplier()'}"><i class="fas fa-save"></i> ${btnText}</button></div>`);
+}
 function addSupplier(){ if(!document.getElementById('sname').value.trim())return toast('Name required'); db.suppliers.push({id:uid(),name:document.getElementById('sname').value.trim(),phone:document.getElementById('sphone').value,address:document.getElementById('saddress').value,due:0}); save(); log('Supplier '+document.getElementById('sname').value.trim()); closeModal(); renderSuppliers(); toast('Added'); }
+function updateSupplier(id){
+  let s=db.suppliers.find(x=>x.id===id); if(!s)return;
+  s.name=document.getElementById('sname').value.trim()||s.name;
+  s.phone=document.getElementById('sphone').value;
+  s.address=document.getElementById('saddress').value;
+  save(); log('Updated supplier '+s.name); closeModal(); renderSuppliers(); toast('Updated');
+}
+function deleteSupplier(id){
+  if(!confirm('Delete this supplier?'))return;
+  let s=db.suppliers.find(x=>x.id===id);
+  db.suppliers=db.suppliers.filter(x=>x.id!==id);
+  save(); log('Deleted supplier '+s.name); renderSuppliers(); toast('Deleted');
+}
 function renderSuppliers(){
   let q=(document.getElementById('supplierSearch')?.value||'').toLowerCase(); let a=db.suppliers.filter(x=>(x.name+' '+x.phone).toLowerCase().includes(q));
-  document.getElementById('suppliersTable').innerHTML=a.length?`<table><thead><tr><th>Name</th><th>Phone</th><th>Address</th><th class="num">Payable</th><th></th></tr></thead><tbody>${a.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.phone)}</td><td>${esc(x.address)}</td><td class="num">${x.due?'<span class="badge b-amber">'+money(x.due)+'</span>':money(0)}</td><td>${x.due>0?`<button class="btn btn-success btn-sm" onclick="openMakePayment(${x.id})"><i class="fas fa-hand-holding-usd"></i></button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No suppliers</div>';
+  document.getElementById('suppliersTable').innerHTML=a.length?`<table><thead><tr><th>Name</th><th>Phone</th><th>Address</th><th class="num">Payable</th><th>Action</th></tr></thead><tbody>${a.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.phone)}</td><td>${esc(x.address)}</td><td class="num">${x.due?'<span class="badge b-amber">'+money(x.due)+'</span>':money(0)}</td><td><button class="btn btn-success btn-sm" onclick="openMakePayment(${x.id})"><i class="fas fa-hand-holding-usd"></i></button> <button class="btn btn-primary btn-sm" onclick="openSupplierModal(${x.id})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteSupplier(${x.id})"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No suppliers</div>';
 }
 function openMakePayment(id){ let s=db.suppliers.find(x=>x.id===id); if(!s)return; openModal('Make Payment',`<div class="pill" style="margin-bottom:12px">Payable: ${money(s.due)}</div><input id="payAmt" type="number" placeholder="Amount"><div style="margin-top:14px;text-align:right"><button class="btn btn-primary" onclick="makePayment(${id})">Save</button></div>`); }
 function makePayment(id){ let s=db.suppliers.find(x=>x.id===id); let amt=Math.min(+document.getElementById('payAmt').value||0,s.due); if(!amt)return toast('Enter valid amount'); s.due-=amt; save(); log('Paid Rs '+amt+' to '+s.name); closeModal(); renderSuppliers(); renderDashboard(); toast('Payment recorded'); }
